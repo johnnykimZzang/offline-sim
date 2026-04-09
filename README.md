@@ -1,16 +1,82 @@
-# React + Vite
+# 브랜드 경험 + CRM 오프라인 시뮬레이터
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+toomuchtax 오프라인 매장의 월간 매출을 시뮬레이션하는 의사결정 도구.
 
-Currently, two official plugins are available:
+**→ https://offline-sim.vercel.app**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 뭘 할 수 있나
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+슬라이더로 변수를 조작하면 월 매출·KPI가 실시간으로 계산됩니다.
 
-## Expanding the ESLint configuration
+| 탭 | 내용 |
+|---|---|
+| 일별 캘린더 | 날짜별 매출 + 방문자 수 |
+| 주간 요약 | 주차별 집계 |
+| 전환 퍼널 | 유동인구 → 구매까지 단계별 수치 |
+| CRM 퍼널 | 회원가입 → 온라인 재구매 흐름 |
+| 목표 역산 | 목표 매출 입력 → 필요 지표 자동 계산 |
+| 평일 vs 주말 | 요일 패턴 비교 |
+| **민감도** | 어떤 변수가 매출을 가장 크게 움직이는지 순위 |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 민감도 분석 (핵심 기능)
+
+"슬라이더를 어디부터 만져야 하나"에 대한 객관적 답.
+
+- 25개 변수를 각각 ±5/10/20% 바꿨을 때 매출 변화를 측정
+- 토네이도 차트로 중요도 순위화
+- 인사이트 카드: 지금 가장 효과적인 레버, 집중 영역, 무시해도 되는 변수 자동 도출
+
+---
+
+## 변수 영역
+
+- **수요** — 유동인구, 매장 유입률, 주말 가중치, 관광객 비중
+- **제품** — 단품/세트/후드셋업 가격, 구매 구성 비율
+- **전환** — 목적형 방문 비율, 전환율, 동행 결정 비율
+- **피팅룸** — 체류 시간, 룸 수, 이용률, 피팅 후 구매율
+- **CRM** — 회원가입률, 재구매율, 재구매 객단가
+- **운영** — 직원 수/capacity, 휴무일
+
+---
+
+## 시나리오 프리셋
+
+상단 칩으로 즉시 전환:
+
+| 프리셋 | 설명 |
+|---|---|
+| 보수 | 낮은 유입·전환 기준 |
+| 현실 | 현재 운영 기준값 |
+| 낙관 | 최적 운영 가정 |
+| 목표 (1억) | 월 매출 1억 달성 가정치 |
+
+---
+
+## 로컬 실행
+
+```bash
+npm install
+npm run dev
+```
+
+Node.js 18+ 필요. 외부 의존성 없음 (React + Vite만).
+
+---
+
+## 기술 스택
+
+- React 19 + Vite
+- 외부 라이브러리 0 (차트 라이브러리 없음, CSS 직접 구현)
+- localStorage 자동 저장 (새로고침해도 설정 유지)
+- 팀원별 개인 저장 (공유 URL로 접속해도 서로 영향 없음)
+
+---
+
+## 문서
+
+- [`docs/architecture.md`](docs/architecture.md) — 전체 구조
+- [`docs/decisions.md`](docs/decisions.md) — 설계 결정 이유
+- [`docs/changelog.md`](docs/changelog.md) — 변경 이력
+- [`docs/infra.md`](docs/infra.md) — 배포/인프라
