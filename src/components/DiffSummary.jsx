@@ -49,6 +49,7 @@ export default function DiffSummary({
   currentState, baselineState, baselineLabel,
   currentRevenue, baselineRevenue,
   showToast,
+  inline = false,
 }) {
   const diff = useMemo(() => {
     if (!currentState || !baselineState) return null;
@@ -75,6 +76,43 @@ export default function DiffSummary({
   const hasChange   = diff && diff.top2.length > 0;
 
   if (!hasChange && Math.abs(revDeltaPct) < 0.1) return null;
+
+  // inline 모드: 탭바 우측에 붙는 compact 텍스트 전용
+  if (inline) {
+    return (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        paddingBottom: 6,
+        flexShrink: 1,
+        minWidth: 0,
+        overflow: "hidden",
+      }}>
+        <span style={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: T.textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {hasChange ? (
+            <>
+              {diff.top2.map((c, i) => (
+                <span key={c.key}>
+                  {i > 0 && <span style={{ color: T.textFaint }}>, </span>}
+                  <span style={{ color: c.deltaPct >= 0 ? T.accent : T.warn }}>
+                    {c.deltaPct >= 0 ? "+" : ""}{c.deltaPct.toFixed(0)}%
+                  </span>
+                </span>
+              ))}
+              {" · "}
+              <span style={{ color: revDeltaPct >= 0 ? T.accent : T.warn, fontWeight: 500 }}>
+                매출 {revDeltaPct >= 0 ? "+" : ""}{revDeltaPct.toFixed(1)}%
+              </span>
+            </>
+          ) : null}
+        </span>
+        <span style={{ fontSize: 10, fontFamily: "'Source Code Pro', monospace", color: showToast ? T.accent : T.textFaint, transition: "color 0.3s", whiteSpace: "nowrap", flexShrink: 0 }}>
+          {showToast ? "기준 업데이트 ✓" : `기준: ${baselineLabel}`}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div style={{

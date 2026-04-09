@@ -1,5 +1,4 @@
 import { T } from "../../design/tokens";
-import CodeLabel from "./CodeLabel";
 
 /**
  * Collapsible/resettable section panel.
@@ -18,9 +17,11 @@ export default function Section({ label, children, onReset, modified, groupScore
     <div style={{
       background: T.bgSurface,
       border: `1px solid ${T.borderDefault}`,
-      borderRadius: 10,
+      borderLeft: `3px solid ${T.borderStrong}`,
+      borderRadius: 8,
       padding: "10px 12px",
       marginBottom: 6,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
     }}>
       <div style={{
         display: "flex",
@@ -29,7 +30,14 @@ export default function Section({ label, children, onReset, modified, groupScore
         marginBottom: groupScore != null ? 6 : 8,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <CodeLabel color={T.accent}>{label}</CodeLabel>
+          <span style={{
+            fontSize: 10,
+            fontFamily: "'Source Code Pro', monospace",
+            color: T.textFaint,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            fontWeight: 500,
+          }}>{label}</span>
           {modified && (
             <span title="이 섹션에 변경된 항목 있음" style={{
               width: 5, height: 5, borderRadius: "50%",

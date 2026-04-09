@@ -26,6 +26,7 @@ export default function StatCard({ label, value, sub, tone = "default", flex = 1
       padding: s.padding,
       flex,
       minWidth,
+      boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
     }}>
       <div style={{ marginBottom: size === "hero" ? 6 : 4 }}>
         <CodeLabel style={{ fontSize: s.labelSize }}>{label}</CodeLabel>

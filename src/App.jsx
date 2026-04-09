@@ -6,14 +6,10 @@ import { initialState, DOMAINS } from "./state/schema";
 import { simulateMonth, computeSummary, computeGoalReversal } from "./lib/simulator";
 import { runInsights } from "./insights/rules";
 import { runSensitivity } from "./lib/sensitivity";
-import { presets } from "./state/presets";
-
 import Header        from "./components/Header";
-import PresetBar     from "./components/PresetBar";
 import ControlPanel  from "./components/ControlPanel";
 import KpiGrid       from "./components/KpiGrid";
 import InsightPanel  from "./components/InsightPanel";
-import Tab           from "./components/primitives/Tab";
 
 import CalendarView  from "./components/views/CalendarView";
 import WeeklyView    from "./components/views/WeeklyView";
@@ -22,7 +18,6 @@ import CrmFunnelView from "./components/views/CrmFunnelView";
 import GoalView      from "./components/views/GoalView";
 import CompareView   from "./components/views/CompareView";
 import SensitivityView from "./components/views/SensitivityView";
-import TopLeversCard from "./components/TopLeversCard";
 import DiffSummary from "./components/DiffSummary";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,14 +56,6 @@ export default function App() {
     }
     return false;
   }, [state]);
-
-  // ── Hero 배너 state ──
-  const [heroDismissed, setHeroDismissed] = useState(() =>
-    localStorage.getItem("hero-dismissed-v1") === "true"
-  );
-
-  // showHeroBanner: hasModifications가 확정된 뒤 계산
-  const showHeroBanner = !heroDismissed && !hasModifications;
 
   // ── Baseline 추적 (DiffSummary 기준) ──
   const [baseline, setBaseline] = useState({ state: initialState, label: "기본 시나리오" });
@@ -130,7 +117,13 @@ export default function App() {
         rel="stylesheet"
       />
 
-      <Header selectedMonth={state.meta.selectedMonth} onMonthChange={setMonth} />
+      <Header
+        selectedMonth={state.meta.selectedMonth}
+        onMonthChange={setMonth}
+        onApply={handleApplyPreset}
+        onResetAll={handleResetAll}
+        hasModifications={hasModifications}
+      />
 
       {/* 콘텐츠 행 — 헤더 아래 남은 높이 전부 차지, 좌우 독립 스크롤 */}
       <div style={{
@@ -152,6 +145,7 @@ export default function App() {
           height: "100%",
           padding: "14px 14px 20px 0",
           borderRight: `1px solid ${T.borderSubtle}`,
+          background: T.bgDeep,
         }}>
           <ControlPanel
             state={state}
@@ -171,98 +165,62 @@ export default function App() {
           padding: "14px 0 20px 16px",
           minWidth: 0,
         }}>
-          {/* Hero 배너 — 첫 진입 안내 */}
-          {showHeroBanner && (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: T.accentDim,
-              border: `1px solid ${T.accentBorder}`,
-              borderRadius: 8,
-              padding: "7px 12px",
-              marginBottom: 8,
-              gap: 10,
-              flexWrap: "wrap",
-            }}>
-              <span style={{ fontSize: 12, color: T.accent, fontFamily: "'Inter', sans-serif" }}>
-                처음이세요? <strong>현실 시나리오</strong>부터 불러와서 시작해보세요 →
-              </span>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button
-                  onClick={() => {
-                    handleApplyPreset(presets.realistic.state, presets.realistic.label);
-                    setHeroDismissed(true);
-                    localStorage.setItem("hero-dismissed-v1", "true");
-                  }}
-                  style={{
-                    padding: "4px 14px", fontSize: 11, fontWeight: 500,
-                    background: T.accent, color: "#111", border: "none",
-                    borderRadius: 6, cursor: "pointer", fontFamily: "'Inter', sans-serif",
-                  }}
-                >현실 시나리오 불러오기</button>
-                <button
-                  onClick={() => {
-                    setHeroDismissed(true);
-                    localStorage.setItem("hero-dismissed-v1", "true");
-                  }}
-                  style={{
-                    background: "transparent", border: "none", color: T.textFaint,
-                    cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif", padding: "4px 6px",
-                  }}
-                >건너뛰기</button>
-              </div>
-            </div>
-          )}
-
-          <PresetBar
-            onApply={handleApplyPreset}
-            onResetAll={handleResetAll}
-            hasModifications={hasModifications}
-          />
-
-          <DiffSummary
-            currentState={state}
-            baselineState={baseline.state}
-            baselineLabel={baseline.label}
-            currentRevenue={summary.totalRevenue}
-            baselineRevenue={baselineSummary.totalRevenue}
-            showToast={baselineToast}
-          />
 
           <KpiGrid summary={summary} targetRevenue={state.goal.targetRevenue} />
 
-          {/* Tabs — 2단 위계 */}
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-              <Tab active={state.meta.view === "sensitivity"} onClick={() => setView("sensitivity")}>민감도</Tab>
-              <Tab active={state.meta.view === "goal"}        onClick={() => setView("goal")}>목표 역산</Tab>
-              <Tab active={state.meta.view === "calendar"}    onClick={() => setView("calendar")}>일별 캘린더</Tab>
-            </div>
-            <div style={{ display: "flex", gap: 5, paddingLeft: 2 }}>
+          {/* Tab bar + DiffSummary — Amplitude underline style */}
+          <div style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            borderBottom: `1px solid ${T.borderSubtle}`,
+            marginBottom: 14,
+            gap: 8,
+          }}>
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 0, overflowX: "auto", flexShrink: 0 }}>
               {[
-                { id: "weekly",    label: "주간 요약" },
-                { id: "funnel",    label: "전환 퍼널" },
-                { id: "crmFunnel", label: "CRM 퍼널" },
-                { id: "compare",   label: "평일 vs 주말" },
-              ].map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setView(id)}
-                  style={{
-                    fontSize: 11,
-                    fontFamily: "'Source Code Pro', monospace",
-                    padding: "3px 10px",
-                    borderRadius: 5,
-                    border: `1px solid ${state.meta.view === id ? T.accentBorder : T.borderDefault}`,
-                    background: state.meta.view === id ? T.accentDim : "transparent",
-                    color: state.meta.view === id ? T.accent : T.textFaint,
-                    cursor: "pointer",
-                    transition: "all 0.12s",
-                  }}
-                >{label}</button>
-              ))}
+                { id: "sensitivity", label: "민감도" },
+                { id: "goal",        label: "목표 역산" },
+                { id: "calendar",    label: "일별 캘린더" },
+                { id: "weekly",      label: "주간 요약" },
+                { id: "funnel",      label: "전환 퍼널" },
+                { id: "crmFunnel",   label: "CRM 퍼널" },
+                { id: "compare",     label: "평일 vs 주말" },
+              ].map(({ id, label }) => {
+                const active = state.meta.view === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setView(id)}
+                    style={{
+                      padding: "8px 14px",
+                      fontSize: 12,
+                      fontFamily: "'Inter', sans-serif",
+                      fontWeight: active ? 500 : 400,
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: active ? `2px solid ${T.accent}` : "2px solid transparent",
+                      color: active ? T.accent : T.textMuted,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "color 0.12s, border-color 0.12s",
+                      marginBottom: -1,
+                    }}
+                  >{label}</button>
+                );
+              })}
             </div>
+            {/* DiffSummary — 탭바 우측 인라인 */}
+            <DiffSummary
+              currentState={state}
+              baselineState={baseline.state}
+              baselineLabel={baseline.label}
+              currentRevenue={summary.totalRevenue}
+              baselineRevenue={baselineSummary.totalRevenue}
+              showToast={baselineToast}
+              inline
+            />
           </div>
 
           {state.meta.view === "calendar" && (
