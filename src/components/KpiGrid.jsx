@@ -44,6 +44,7 @@ export default function KpiGrid({ summary, targetRevenue }) {
           sub={`목표 ₩${fmtW(targetRevenue)}`}
           tone={achieveTone}
           size="primary"
+          minWidth={90}
         />
         <StatCard
           label="회원가입 수"
@@ -51,6 +52,7 @@ export default function KpiGrid({ summary, targetRevenue }) {
           sub={`수신동의 ${fmt(summary.totalOptIns)}명`}
           tone="accent"
           size="primary"
+          minWidth={90}
         />
         <StatCard
           label="온라인 재구매"
@@ -58,6 +60,7 @@ export default function KpiGrid({ summary, targetRevenue }) {
           sub={`${fmt(summary.totalOnlineRepurch)}명 예상`}
           tone="accent"
           size="primary"
+          minWidth={90}
         />
       </div>
 
@@ -68,24 +71,28 @@ export default function KpiGrid({ summary, targetRevenue }) {
           value={`${fmt(summary.totalPurchasers)}건`}
           sub={`일 평균 ${Math.round(summary.avgPurch)}건`}
           size="secondary"
+          minWidth={80}
         />
         <StatCard
           label="객단가"
           value={`₩${fmt(summary.effectiveAOV)}`}
           sub="자동 산정"
           size="secondary"
+          minWidth={80}
         />
         <StatCard
           label="총 유입"
           value={`${fmt(summary.totalVisitors)}명`}
           sub={`실 전환 ${fmtPct(realConvPct)}`}
           size="secondary"
+          minWidth={80}
         />
         <StatCard
           label="피팅 구매율"
           value={fmtPct(fitConvPct)}
           sub={`피팅 ${fmt(summary.totalFittingVisitors)}명`}
           size="secondary"
+          minWidth={80}
         />
       </div>
     </div>

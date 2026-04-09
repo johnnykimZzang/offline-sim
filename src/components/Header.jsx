@@ -2,22 +2,29 @@ import { T } from "../design/tokens";
 import { MONTHS_KR } from "../lib/constants";
 import { presetList } from "../state/presets";
 
-export default function Header({ selectedMonth, onMonthChange, onApply, onResetAll, hasModifications }) {
+export default function Header({ selectedMonth, onMonthChange, onApply, onResetAll, hasModifications, onToggleSidebar, sidebarOpen }) {
   return (
     <div style={{
       borderBottom: `1px solid ${T.borderSubtle}`,
-      padding: "0 20px",
+      padding: "0 8px",
       height: 52,
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
       background: T.bgDeep,
-      position: "sticky",
-      top: 0,
-      zIndex: 10,
       gap: 12,
       flexShrink: 0,
     }}>
+      {/* Mobile sidebar toggle — hidden on desktop via CSS */}
+      <button
+        className="sim-sidebar-toggle"
+        onClick={onToggleSidebar}
+        style={{ borderColor: T.borderDefault, color: T.textMuted, marginRight: 2 }}
+        aria-label="사이드바 열기/닫기"
+      >
+        {sidebarOpen ? "✕" : "☰"}
+      </button>
+
       {/* Left — brand identity */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <div style={{
@@ -41,7 +48,7 @@ export default function Header({ selectedMonth, onMonthChange, onApply, onResetA
       </div>
 
       {/* Center — scenario presets */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, justifyContent: "center", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, justifyContent: "center", minWidth: 0, overflow: "hidden" }}>
         <span style={{
           fontSize: 9,
           fontFamily: "'Source Code Pro', monospace",
