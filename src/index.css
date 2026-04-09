@@ -55,15 +55,15 @@ body {
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1240px;
   margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  text-align: left;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 h1,
@@ -108,4 +108,63 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* ─── SaaS Dashboard Layout Tokens ─── */
+:root {
+  --sim-sidebar-width: 260px;
+  --sim-page-gutter: 8px;
+}
+
+.sim-sidebar {
+  width: var(--sim-sidebar-width);
+  flex-shrink: 0;
+}
+
+.sim-sidebar-backdrop { display: none; }
+.sim-sidebar-toggle   { display: none; }
+
+/* ─── Tablet: 768~1199 (compact) ─── */
+@media (max-width: 1199px) and (min-width: 768px) {
+  :root { --sim-sidebar-width: 240px; }
+}
+
+/* ─── Mobile: <= 767 (off-canvas drawer) ─── */
+@media (max-width: 767px) {
+  .sim-sidebar {
+    position: fixed !important;
+    top: 0; left: 0;
+    height: 100% !important;
+    z-index: 200;
+    width: 280px !important;
+    transform: translateX(-100%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sim-sidebar.is-open { transform: translateX(0); }
+
+  .sim-sidebar-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    z-index: 199;
+    background: rgba(0,0,0,0.55);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .sim-sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  .sim-main {
+    width: 100% !important;
+    padding-left: var(--sim-page-gutter) !important;
+    padding-right: var(--sim-page-gutter) !important;
+  }
+
+  .sim-sidebar-toggle {
+    display: flex;
+    align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid; border-radius: 6px;
+    cursor: pointer; flex-shrink: 0;
+    font-size: 16px;
+  }
 }

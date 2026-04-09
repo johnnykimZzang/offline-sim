@@ -9,7 +9,7 @@ import { T } from "../../design/tokens";
  *   ...
  * </Section>
  */
-export default function Section({ label, children, onReset, modified, groupScore }) {
+export default function Section({ label, children, onReset, modified, groupScore, accentColor }) {
   // groupScore: upPct (e.g. 4.2) → normalize to 0-100, ceiling at 5% = full bar
   const barPct = groupScore != null ? Math.min((groupScore / 5) * 100, 100) : 0;
 
@@ -17,9 +17,9 @@ export default function Section({ label, children, onReset, modified, groupScore
     <div style={{
       background: T.bgSurface,
       border: `1px solid ${T.borderDefault}`,
-      borderLeft: `3px solid ${T.borderStrong}`,
+      borderLeft: `3px solid ${accentColor || T.borderStrong}`,
       borderRadius: 8,
-      padding: "10px 12px",
+      padding: "8px 10px",
       marginBottom: 6,
       boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
     }}>

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { T } from "../../design/tokens";
 import { fmt } from "../../lib/format";
 
@@ -18,6 +18,8 @@ function Slider({
     if (domain && field) onChange(domain, field, v);
     else onChange(v);
   };
+
+  const [tipPos, setTipPos] = useState(null);
 
   const isModified  = defaultValue != null && value !== defaultValue;
   const isTopLever  = leverRank != null && leverRank <= 5;
@@ -59,7 +61,65 @@ function Slider({
           )}
           {label}
           {tip && (
-            <span title={tip} style={{ marginLeft: 2, cursor: "help", color: T.textFaint, fontSize: 10 }}>ⓘ</span>
+            <span
+              style={{ display: "inline-flex", marginLeft: 2 }}
+              onMouseEnter={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setTipPos({ x: r.left + r.width / 2, y: r.top });
+              }}
+              onMouseLeave={() => setTipPos(null)}
+            >
+              <span style={{
+                cursor: "help",
+                color: T.textFaint,
+                fontSize: 9,
+                fontFamily: "'Source Code Pro', monospace",
+                fontWeight: 700,
+                border: `1px solid ${T.borderDefault}`,
+                borderRadius: "50%",
+                width: 14,
+                height: 14,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+                flexShrink: 0,
+                userSelect: "none",
+              }}>!</span>
+              {tipPos && (
+                <div style={{
+                  position: "fixed",
+                  top: tipPos.y - 8,
+                  left: Math.min(tipPos.x, window.innerWidth - 250),
+                  transform: "translate(-50%, -100%)",
+                  background: T.bgSurface2,
+                  border: `1px solid ${T.borderStrong}`,
+                  borderRadius: 8,
+                  padding: "8px 11px",
+                  fontSize: 11,
+                  color: T.textSecondary,
+                  fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
+                  lineHeight: 1.55,
+                  width: 230,
+                  whiteSpace: "normal",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.6)",
+                  zIndex: 9999,
+                  pointerEvents: "none",
+                }}>
+                  {tip}
+                  <div style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 0, height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: `5px solid ${T.borderStrong}`,
+                  }} />
+                </div>
+              )}
+            </span>
           )}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>

@@ -1,4 +1,4 @@
-import { useMemo, useDeferredValue, useState, useCallback } from "react";
+import { useMemo, useDeferredValue, useState, useCallback, useEffect } from "react";
 
 import { T } from "./design/tokens";
 import { useSimulator } from "./state/useSimulator";
@@ -8,6 +8,7 @@ import { runInsights } from "./insights/rules";
 import { runSensitivity } from "./lib/sensitivity";
 import Header        from "./components/Header";
 import ControlPanel  from "./components/ControlPanel";
+import TopLeversCard from "./components/TopLeversCard";
 import KpiGrid       from "./components/KpiGrid";
 import InsightPanel  from "./components/InsightPanel";
 
@@ -56,6 +57,26 @@ export default function App() {
     }
     return false;
   }, [state]);
+
+  // ── 모바일 사이드바 토글 ──
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth >= 768) setSidebarOpen(false); };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => { if (e.key === "Escape") setSidebarOpen(false); };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // ── Baseline 추적 (DiffSummary 기준) ──
   const [baseline, setBaseline] = useState({ state: initialState, label: "기본 시나리오" });
@@ -123,6 +144,8 @@ export default function App() {
         onApply={handleApplyPreset}
         onResetAll={handleResetAll}
         hasModifications={hasModifications}
+        onToggleSidebar={() => setSidebarOpen(o => !o)}
+        sidebarOpen={sidebarOpen}
       />
 
       {/* 콘텐츠 행 — 헤더 아래 남은 높이 전부 차지, 좌우 독립 스크롤 */}
@@ -130,55 +153,80 @@ export default function App() {
         flex: 1,
         overflow: "hidden",
         display: "flex",
-        maxWidth: 1440,
         width: "100%",
-        margin: "0 auto",
-        padding: "0 20px",
         minWidth: 0,
       }}>
 
-        {/* 좌 패널 — 310px 고정, 독립 스크롤 */}
-        <div style={{
-          width: 310,
-          flexShrink: 0,
-          overflowY: "auto",
-          height: "100%",
-          padding: "14px 14px 20px 0",
-          borderRight: `1px solid ${T.borderSubtle}`,
-          background: T.bgDeep,
-        }}>
-          <ControlPanel
-            state={state}
-            update={update}
-            toggleClosedDow={toggleClosedDow}
-            resetDomain={resetDomain}
-            summary={summary}
-            leverMap={leverMap}
-          />
+        {/* 모바일 backdrop */}
+        <div
+          className={`sim-sidebar-backdrop${sidebarOpen ? " is-open" : ""}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+
+        {/* 좌 패널 — TopLeversCard 고정 상단 + 슬라이더 스크롤 영역 분리 */}
+        <div
+          className={`sim-sidebar${sidebarOpen ? " is-open" : ""}`}
+          style={{
+            height: "100%",
+            borderRight: `1px solid ${T.borderSubtle}`,
+            background: T.bgDeep,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* 고정 상단 — TopLeversCard */}
+          <div style={{ padding: "10px 8px 6px 8px", flexShrink: 0 }}>
+            <TopLeversCard leverMap={leverMap} />
+          </div>
+          {/* 구분선 */}
+          <div style={{ height: 1, background: T.borderSubtle, flexShrink: 0, margin: "0 8px" }} />
+          {/* 슬라이더 스크롤 영역 */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 16px 8px" }}>
+            <ControlPanel
+              state={state}
+              update={update}
+              toggleClosedDow={toggleClosedDow}
+              resetDomain={resetDomain}
+              summary={summary}
+              leverMap={leverMap}
+            />
+          </div>
         </div>
 
         {/* 우 패널 — 나머지 너비, 독립 스크롤 */}
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          height: "100%",
-          padding: "14px 0 20px 16px",
-          minWidth: 0,
-        }}>
+        <div
+          className="sim-main"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            height: "100%",
+            padding: "10px 8px 16px 8px",
+            minWidth: 0,
+          }}
+        >
 
           <KpiGrid summary={summary} targetRevenue={state.goal.targetRevenue} />
 
-          {/* Tab bar + DiffSummary — Amplitude underline style */}
+          {/* DiffSummary — 변경 컨텍스트 스트립 (탭 위) */}
+          <DiffSummary
+            currentState={state}
+            baselineState={baseline.state}
+            baselineLabel={baseline.label}
+            currentRevenue={summary.totalRevenue}
+            baselineRevenue={baselineSummary.totalRevenue}
+            showToast={baselineToast}
+          />
+
+          {/* Tab bar — Amplitude underline style */}
           <div style={{
             display: "flex",
             alignItems: "flex-end",
-            justifyContent: "space-between",
             borderBottom: `1px solid ${T.borderSubtle}`,
             marginBottom: 14,
-            gap: 8,
           }}>
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 0, overflowX: "auto", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 0, overflowX: "auto", width: "100%" }}>
               {[
                 { id: "sensitivity", label: "민감도" },
                 { id: "goal",        label: "목표 역산" },
@@ -211,16 +259,6 @@ export default function App() {
                 );
               })}
             </div>
-            {/* DiffSummary — 탭바 우측 인라인 */}
-            <DiffSummary
-              currentState={state}
-              baselineState={baseline.state}
-              baselineLabel={baseline.label}
-              currentRevenue={summary.totalRevenue}
-              baselineRevenue={baselineSummary.totalRevenue}
-              showToast={baselineToast}
-              inline
-            />
           </div>
 
           {state.meta.view === "calendar" && (

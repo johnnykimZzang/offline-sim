@@ -1,5 +1,4 @@
 import { T } from "../../design/tokens";
-import CodeLabel from "./CodeLabel";
 
 const PALETTE = {
   default: { bg: T.bgSurface, border: T.borderDefault, color: T.textPrimary },
@@ -10,9 +9,9 @@ const PALETTE = {
 
 // size: "hero" | "primary" | "secondary"
 const SIZE_STYLE = {
-  hero:      { padding: "12px 16px", valueSize: 22, labelSize: 11 },
-  primary:   { padding: "8px 10px",  valueSize: 14, labelSize: 10 },
-  secondary: { padding: "7px 10px",  valueSize: 12, labelSize: 10 },
+  hero:      { padding: "12px 16px", valueSize: 22, labelSize: 11, subSize: 11 },
+  primary:   { padding: "8px 10px",  valueSize: 14, labelSize: 11, subSize: 10 },
+  secondary: { padding: "7px 10px",  valueSize: 12, labelSize: 10, subSize: 10 },
 };
 
 export default function StatCard({ label, value, sub, tone = "default", flex = 1, minWidth = 120, size = "primary" }) {
@@ -28,9 +27,16 @@ export default function StatCard({ label, value, sub, tone = "default", flex = 1
       minWidth,
       boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
     }}>
-      <div style={{ marginBottom: size === "hero" ? 6 : 4 }}>
-        <CodeLabel style={{ fontSize: s.labelSize }}>{label}</CodeLabel>
-      </div>
+      {/* Label — Inter semi-bold, textSecondary로 value와 시각적 위계 구분 */}
+      <div style={{
+        fontSize: s.labelSize,
+        fontWeight: 600,
+        color: T.textSecondary,
+        fontFamily: "'Inter', 'Noto Sans KR', sans-serif",
+        letterSpacing: "0.01em",
+        lineHeight: 1.2,
+        marginBottom: size === "hero" ? 6 : 4,
+      }}>{label}</div>
       <div style={{
         fontSize: s.valueSize,
         fontWeight: 500,
@@ -40,8 +46,11 @@ export default function StatCard({ label, value, sub, tone = "default", flex = 1
       }}>{value}</div>
       {sub && (
         <div style={{
-          fontSize: 11, color: T.textMuted, marginTop: 3,
-          fontFamily: "'Inter', sans-serif", lineHeight: 1.3,
+          fontSize: s.subSize,
+          color: T.textFaint,
+          marginTop: 3,
+          fontFamily: "'Inter', sans-serif",
+          lineHeight: 1.3,
         }}>{sub}</div>
       )}
     </div>
