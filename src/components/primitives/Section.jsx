@@ -4,24 +4,29 @@ import CodeLabel from "./CodeLabel";
 /**
  * Collapsible/resettable section panel.
  *
- * <Section label="유동인구 / 유입" onReset={() => resetDomain("demand")} modified>
+ * groupScore: 0-100. 그룹 내 최대 민감도 영향도 (%). 5%=풀바 기준.
+ *
+ * <Section label="유동인구 / 유입" onReset={() => resetDomain("demand")} modified groupScore={42}>
  *   ...
  * </Section>
  */
-export default function Section({ label, children, onReset, modified }) {
+export default function Section({ label, children, onReset, modified, groupScore }) {
+  // groupScore: upPct (e.g. 4.2) → normalize to 0-100, ceiling at 5% = full bar
+  const barPct = groupScore != null ? Math.min((groupScore / 5) * 100, 100) : 0;
+
   return (
     <div style={{
       background: T.bgSurface,
       border: `1px solid ${T.borderDefault}`,
       borderRadius: 10,
-      padding: "14px 16px",
-      marginBottom: 8,
+      padding: "10px 12px",
+      marginBottom: 6,
     }}>
       <div style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: groupScore != null ? 6 : 8,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <CodeLabel color={T.accent}>{label}</CodeLabel>
@@ -60,6 +65,26 @@ export default function Section({ label, children, onReset, modified }) {
           >↺ 초기화</button>
         )}
       </div>
+
+      {/* 그룹 영향도 micro bar */}
+      {groupScore != null && (
+        <div style={{ marginBottom: 6 }}>
+          <div style={{
+            height: 2,
+            background: T.borderSubtle,
+            borderRadius: 9999,
+            overflow: "hidden",
+          }}>
+            <div style={{
+              width: `${barPct}%`,
+              height: "100%",
+              background: barPct > 60 ? T.accent : barPct > 30 ? "rgba(62,207,142,0.5)" : T.borderDefault,
+              transition: "width 0.4s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
       {children}
     </div>
   );

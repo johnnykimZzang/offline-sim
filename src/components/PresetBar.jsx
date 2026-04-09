@@ -13,8 +13,8 @@ export default function PresetBar({ onApply, onResetAll, hasModifications }) {
       display: "flex",
       alignItems: "center",
       gap: 10,
-      padding: "10px 14px",
-      marginBottom: 10,
+      padding: "7px 10px",
+      marginBottom: 8,
       background: T.bgSurface,
       border: `1px solid ${T.borderDefault}`,
       borderRadius: 10,
@@ -26,7 +26,7 @@ export default function PresetBar({ onApply, onResetAll, hasModifications }) {
         {presetList.map((p) => (
           <button
             key={p.id}
-            onClick={() => onApply(p.state)}
+            onClick={() => onApply(p.state, p.label)}
             title={p.description}
             style={{
               padding: "4px 12px",

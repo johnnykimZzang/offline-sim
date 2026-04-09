@@ -70,7 +70,7 @@ export const initialState = {
   meta: {
     selectedMonth: new Date().getMonth(),
     selectedYear: new Date().getFullYear(),
-    view: "calendar", // calendar | weekly | funnel | crmFunnel | goal | compare
+    view: "sensitivity", // sensitivity | goal | calendar | weekly | funnel | crmFunnel | compare
   },
 };
 

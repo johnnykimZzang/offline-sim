@@ -5,6 +5,7 @@ import { initialState } from "../state/schema";
 import Section from "./primitives/Section";
 import Slider from "./primitives/Slider";
 import CodeLabel from "./primitives/CodeLabel";
+import TopLeversCard from "./TopLeversCard";
 
 /** 도메인 객체 비교 — 어떤 필드라도 기본값과 다르면 modified */
 function isDomainModified(domain, current) {
@@ -21,7 +22,28 @@ function isDomainModified(domain, current) {
   return false;
 }
 
-export default function ControlPanel({ state, update, toggleClosedDow, resetDomain, summary }) {
+/** leverMap에서 특정 도메인의 최대 upPct (그룹 영향도 점수) */
+function groupScore(leverMap, domain) {
+  if (!leverMap) return undefined;
+  let max = 0;
+  for (const [key, v] of Object.entries(leverMap)) {
+    if (key.startsWith(domain + ".") && v.upPct > max) max = v.upPct;
+  }
+  return max;
+}
+
+/** leverMap에서 domain.field의 rank 반환 */
+function rank(leverMap, domain, field) {
+  return leverMap?.[`${domain}.${field}`]?.rank;
+}
+
+/** leverMap에 Top5가 하나라도 있으면 true */
+function hasAnyTopLever(leverMap) {
+  if (!leverMap) return false;
+  return Object.values(leverMap).some(v => v.isTopLever);
+}
+
+export default function ControlPanel({ state, update, toggleClosedDow, resetDomain, summary, leverMap }) {
   const D = state.demand;
   const P = state.product;
   const C = state.conversion;
@@ -39,19 +61,32 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
   const io = initialState.operations;
   const ig = initialState.goal;
 
+  const topLeversExist = hasAnyTopLever(leverMap);
+
   return (
-    <div style={{ width: 290, flexShrink: 0 }}>
+    <div style={{ width: "100%" }}>
+
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 5,
+        background: T.bg,
+        paddingBottom: 4,
+      }}>
+        <TopLeversCard leverMap={leverMap} />
+      </div>
 
       {/* 유동인구 / 유입 */}
       <Section
         label="유동인구 / 유입"
         modified={isDomainModified("demand", D)}
         onReset={() => resetDomain("demand")}
+        groupScore={groupScore(leverMap, "demand")}
       >
-        <Slider domain="demand" field="footTraffic"    label="일 유동인구"     value={D.footTraffic}    defaultValue={id.footTraffic}    onChange={update} min={500}  max={20000} step={100} unit="명" tip="매장 앞 일평균 유동인구" />
-        <Slider domain="demand" field="storeEntryRate" label="매장 유입률"     value={D.storeEntryRate} defaultValue={id.storeEntryRate} onChange={update} min={1}    max={30}              unit="%" />
-        <Slider domain="demand" field="weekendWeight"  label="주말 가중치"     value={D.weekendWeight}  defaultValue={id.weekendWeight}  onChange={update} min={100}  max={250}             unit="%" tip="140 = 1.4배" />
-        <Slider domain="demand" field="touristRatio"   label="해외 관광객 비중" value={D.touristRatio}   defaultValue={id.touristRatio}   onChange={update} min={0}    max={50}              unit="%" tip="관광객은 구매율 50%로 적용" />
+        <Slider domain="demand" field="footTraffic"    label="일 유동인구"     value={D.footTraffic}    defaultValue={id.footTraffic}    onChange={update} min={500}  max={20000} step={100} unit="명" tip="매장 앞 일평균 유동인구" leverRank={rank(leverMap,"demand","footTraffic")}    hasTopLevers={topLeversExist} />
+        <Slider domain="demand" field="storeEntryRate" label="매장 유입률"     value={D.storeEntryRate} defaultValue={id.storeEntryRate} onChange={update} min={1}    max={30}              unit="%" leverRank={rank(leverMap,"demand","storeEntryRate")} hasTopLevers={topLeversExist} />
+        <Slider domain="demand" field="weekendWeight"  label="주말 가중치"     value={D.weekendWeight}  defaultValue={id.weekendWeight}  onChange={update} min={100}  max={250}             unit="%" tip="140 = 1.4배" leverRank={rank(leverMap,"demand","weekendWeight")}  hasTopLevers={topLeversExist} />
+        <Slider domain="demand" field="touristRatio"   label="해외 관광객 비중" value={D.touristRatio}   defaultValue={id.touristRatio}   onChange={update} min={0}    max={50}              unit="%" tip="관광객은 구매율 50%로 적용" leverRank={rank(leverMap,"demand","touristRatio")} hasTopLevers={topLeversExist} />
       </Section>
 
       {/* 제품 구성 */}
@@ -59,13 +94,14 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
         label="제품 구성 (객단가 자동 산정)"
         modified={isDomainModified("product", P)}
         onReset={() => resetDomain("product")}
+        groupScore={groupScore(leverMap, "product")}
       >
         <div style={{
           background: T.accentDim,
           border: `1px solid ${T.accentBorder}`,
           borderRadius: 6,
           padding: "8px 10px",
-          marginBottom: 12,
+          marginBottom: 8,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
@@ -75,13 +111,13 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
             ₩{fmt(summary.effectiveAOV)}
           </span>
         </div>
-        <Slider domain="product" field="priceSingle"       label="단품 가격"      value={P.priceSingle}       defaultValue={ip.priceSingle}       onChange={update} min={20000}  max={300000} step={1000} unit="원" />
-        <Slider domain="product" field="priceSet"          label="세트 가격"      value={P.priceSet}          defaultValue={ip.priceSet}          onChange={update} min={50000}  max={500000} step={5000} unit="원" />
-        <Slider domain="product" field="priceHoodieSetup"  label="후드 셋업 가격" value={P.priceHoodieSetup}  defaultValue={ip.priceHoodieSetup}  onChange={update} min={100000} max={600000} step={5000} unit="원" />
-        <Slider domain="product" field="setPurchaseRate"   label="세트 구매율"     value={P.setPurchaseRate}   defaultValue={ip.setPurchaseRate}   onChange={update} min={0} max={80} unit="%" />
-        <Slider domain="product" field="hoodieSetShare"    label="후드 셋업 비중" value={P.hoodieSetShare}    defaultValue={ip.hoodieSetShare}    onChange={update} min={0} max={70} unit="%" />
-        <Slider domain="product" field="addonPurchaseRate" label="추가 구매율"     value={P.addonPurchaseRate} defaultValue={ip.addonPurchaseRate} onChange={update} min={0} max={60} unit="%" tip="굿즈/액세서리 추가" />
-        <Slider domain="product" field="addonPrice"        label="추가 구매 단가" value={P.addonPrice}        defaultValue={ip.addonPrice}        onChange={update} min={5000} max={80000} step={1000} unit="원" />
+        <Slider domain="product" field="priceSingle"       label="단품 가격"      value={P.priceSingle}       defaultValue={ip.priceSingle}       onChange={update} min={20000}  max={300000} step={1000} unit="원" leverRank={rank(leverMap,"product","priceSingle")}       hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="priceSet"          label="세트 가격"      value={P.priceSet}          defaultValue={ip.priceSet}          onChange={update} min={50000}  max={500000} step={5000} unit="원" leverRank={rank(leverMap,"product","priceSet")}          hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="priceHoodieSetup"  label="후드 셋업 가격" value={P.priceHoodieSetup}  defaultValue={ip.priceHoodieSetup}  onChange={update} min={100000} max={600000} step={5000} unit="원" leverRank={rank(leverMap,"product","priceHoodieSetup")}  hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="setPurchaseRate"   label="세트 구매율"    value={P.setPurchaseRate}   defaultValue={ip.setPurchaseRate}   onChange={update} min={0} max={80} unit="%" leverRank={rank(leverMap,"product","setPurchaseRate")}   hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="hoodieSetShare"    label="후드 셋업 비중" value={P.hoodieSetShare}    defaultValue={ip.hoodieSetShare}    onChange={update} min={0} max={70} unit="%" leverRank={rank(leverMap,"product","hoodieSetShare")}    hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="addonPurchaseRate" label="추가 구매율"    value={P.addonPurchaseRate} defaultValue={ip.addonPurchaseRate} onChange={update} min={0} max={60} unit="%" tip="굿즈/액세서리 추가" leverRank={rank(leverMap,"product","addonPurchaseRate")} hasTopLevers={topLeversExist} />
+        <Slider domain="product" field="addonPrice"        label="추가 구매 단가" value={P.addonPrice}        defaultValue={ip.addonPrice}        onChange={update} min={5000} max={80000} step={1000} unit="원" leverRank={rank(leverMap,"product","addonPrice")}        hasTopLevers={topLeversExist} />
       </Section>
 
       {/* 방문 유형 / 세분 전환 */}
@@ -89,12 +125,13 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
         label="방문 유형 / 세분 전환"
         modified={isDomainModified("conversion", C)}
         onReset={() => resetDomain("conversion")}
+        groupScore={groupScore(leverMap, "conversion")}
       >
-        <Slider domain="conversion" field="purposeVisitRatio"     label="목적형 방문 비율"  value={C.purposeVisitRatio}     defaultValue={ic.purposeVisitRatio}     onChange={update} min={0} max={100} unit="%" tip="브랜드 인지 후 방문" />
-        <Slider domain="conversion" field="baseConvRate"          label="일반 전환율"       value={C.baseConvRate}          defaultValue={ic.baseConvRate}          onChange={update} min={5}  max={50} unit="%" />
-        <Slider domain="conversion" field="purposeConvRate"       label="목적형 전환율"     value={C.purposeConvRate}       defaultValue={ic.purposeConvRate}       onChange={update} min={10} max={80} unit="%" />
-        <Slider domain="conversion" field="companionRatio"        label="동행 방문 비율"    value={C.companionRatio}        defaultValue={ic.companionRatio}        onChange={update} min={0}  max={90} unit="%" />
-        <Slider domain="conversion" field="companionDecisionRate" label="동행 결정자 비율" value={C.companionDecisionRate} defaultValue={ic.companionDecisionRate} onChange={update} min={10} max={100} unit="%" tip="동행 중 실 구매 결정자" />
+        <Slider domain="conversion" field="purposeVisitRatio"     label="목적형 방문 비율"  value={C.purposeVisitRatio}     defaultValue={ic.purposeVisitRatio}     onChange={update} min={0} max={100} unit="%" tip="브랜드 인지 후 방문" leverRank={rank(leverMap,"conversion","purposeVisitRatio")}     hasTopLevers={topLeversExist} />
+        <Slider domain="conversion" field="baseConvRate"          label="일반 전환율"       value={C.baseConvRate}          defaultValue={ic.baseConvRate}          onChange={update} min={5}  max={50} unit="%" leverRank={rank(leverMap,"conversion","baseConvRate")}          hasTopLevers={topLeversExist} />
+        <Slider domain="conversion" field="purposeConvRate"       label="목적형 전환율"     value={C.purposeConvRate}       defaultValue={ic.purposeConvRate}       onChange={update} min={10} max={80} unit="%" leverRank={rank(leverMap,"conversion","purposeConvRate")}       hasTopLevers={topLeversExist} />
+        <Slider domain="conversion" field="companionRatio"        label="동행 방문 비율"    value={C.companionRatio}        defaultValue={ic.companionRatio}        onChange={update} min={0}  max={90} unit="%" leverRank={rank(leverMap,"conversion","companionRatio")}        hasTopLevers={topLeversExist} />
+        <Slider domain="conversion" field="companionDecisionRate" label="동행 결정자 비율"  value={C.companionDecisionRate} defaultValue={ic.companionDecisionRate} onChange={update} min={10} max={100} unit="%" tip="동행 중 실 구매 결정자" leverRank={rank(leverMap,"conversion","companionDecisionRate")} hasTopLevers={topLeversExist} />
       </Section>
 
       {/* 피팅 / 체류 */}
@@ -102,12 +139,13 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
         label="피팅 / 체류"
         modified={isDomainModified("fitting", F)}
         onReset={() => resetDomain("fitting")}
+        groupScore={groupScore(leverMap, "fitting")}
       >
-        <Slider domain="fitting" field="avgStayMinutes" label="평균 체류시간"     value={F.avgStayMinutes} defaultValue={ifit.avgStayMinutes} onChange={update} min={5}  max={60} unit="분" />
-        <Slider domain="fitting" field="roomCount"      label="피팅룸 수"        value={F.roomCount}      defaultValue={ifit.roomCount}      onChange={update} min={1}  max={6}  unit="개" />
-        <Slider domain="fitting" field="useRate"        label="피팅룸 이용률"    value={F.useRate}        defaultValue={ifit.useRate}        onChange={update} min={0}  max={50} unit="%" />
-        <Slider domain="fitting" field="purchaseRate"   label="피팅 구매율"      value={F.purchaseRate}   defaultValue={ifit.purchaseRate}   onChange={update} min={20} max={80} unit="%" />
-        <Slider domain="fitting" field="waitDropRate"   label="피팅 대기 이탈률" value={F.waitDropRate}   defaultValue={ifit.waitDropRate}   onChange={update} min={0}  max={40} unit="%" />
+        <Slider domain="fitting" field="avgStayMinutes" label="평균 체류시간"     value={F.avgStayMinutes} defaultValue={ifit.avgStayMinutes} onChange={update} min={5}  max={60} unit="분" leverRank={rank(leverMap,"fitting","avgStayMinutes")} hasTopLevers={topLeversExist} />
+        <Slider domain="fitting" field="roomCount"      label="피팅룸 수"        value={F.roomCount}      defaultValue={ifit.roomCount}      onChange={update} min={1}  max={6}  unit="개" leverRank={rank(leverMap,"fitting","roomCount")}      hasTopLevers={topLeversExist} />
+        <Slider domain="fitting" field="useRate"        label="피팅룸 이용률"    value={F.useRate}        defaultValue={ifit.useRate}        onChange={update} min={0}  max={50} unit="%" leverRank={rank(leverMap,"fitting","useRate")}        hasTopLevers={topLeversExist} />
+        <Slider domain="fitting" field="purchaseRate"   label="피팅 구매율"      value={F.purchaseRate}   defaultValue={ifit.purchaseRate}   onChange={update} min={20} max={80} unit="%" leverRank={rank(leverMap,"fitting","purchaseRate")}   hasTopLevers={topLeversExist} />
+        <Slider domain="fitting" field="waitDropRate"   label="피팅 대기 이탈률" value={F.waitDropRate}   defaultValue={ifit.waitDropRate}   onChange={update} min={0}  max={40} unit="%" leverRank={rank(leverMap,"fitting","waitDropRate")}   hasTopLevers={topLeversExist} />
       </Section>
 
       {/* CRM */}
@@ -115,13 +153,14 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
         label="CRM"
         modified={isDomainModified("crm", R)}
         onReset={() => resetDomain("crm")}
+        groupScore={groupScore(leverMap, "crm")}
       >
-        <Slider domain="crm" field="signupRate"           label="회원가입률"       value={R.signupRate}           defaultValue={ir.signupRate}           onChange={update} min={5}  max={80}  unit="%" />
-        <Slider domain="crm" field="optInRate"            label="수신동의율"       value={R.optInRate}            defaultValue={ir.optInRate}            onChange={update} min={50} max={100} unit="%" />
-        <Slider domain="crm" field="storyUploadRate"      label="스토리 업로드율" value={R.storyUploadRate}      defaultValue={ir.storyUploadRate}      onChange={update} min={0}  max={80}  unit="%" />
-        <Slider domain="crm" field="qrScanRate"           label="QR 스캔률"        value={R.qrScanRate}           defaultValue={ir.qrScanRate}           onChange={update} min={0}  max={100} unit="%" />
-        <Slider domain="crm" field="onlineRepurchaseRate" label="온라인 재구매율" value={R.onlineRepurchaseRate} defaultValue={ir.onlineRepurchaseRate} onChange={update} min={0}  max={50}  unit="%" />
-        <Slider domain="crm" field="repurchaseAOV"        label="재구매 객단가"   value={R.repurchaseAOV}        defaultValue={ir.repurchaseAOV}        onChange={update} min={50000} max={400000} step={5000} unit="원" />
+        <Slider domain="crm" field="signupRate"           label="회원가입률"       value={R.signupRate}           defaultValue={ir.signupRate}           onChange={update} min={5}  max={80}  unit="%" leverRank={rank(leverMap,"crm","signupRate")}           hasTopLevers={topLeversExist} />
+        <Slider domain="crm" field="optInRate"            label="수신동의율"       value={R.optInRate}            defaultValue={ir.optInRate}            onChange={update} min={50} max={100} unit="%" leverRank={rank(leverMap,"crm","optInRate")}            hasTopLevers={topLeversExist} />
+        <Slider domain="crm" field="storyUploadRate"      label="스토리 업로드율" value={R.storyUploadRate}      defaultValue={ir.storyUploadRate}      onChange={update} min={0}  max={80}  unit="%" leverRank={rank(leverMap,"crm","storyUploadRate")}      hasTopLevers={topLeversExist} />
+        <Slider domain="crm" field="qrScanRate"           label="QR 스캔률"        value={R.qrScanRate}           defaultValue={ir.qrScanRate}           onChange={update} min={0}  max={100} unit="%" leverRank={rank(leverMap,"crm","qrScanRate")}           hasTopLevers={topLeversExist} />
+        <Slider domain="crm" field="onlineRepurchaseRate" label="온라인 재구매율" value={R.onlineRepurchaseRate} defaultValue={ir.onlineRepurchaseRate} onChange={update} min={0}  max={50}  unit="%" leverRank={rank(leverMap,"crm","onlineRepurchaseRate")} hasTopLevers={topLeversExist} />
+        <Slider domain="crm" field="repurchaseAOV"        label="재구매 객단가"   value={R.repurchaseAOV}        defaultValue={ir.repurchaseAOV}        onChange={update} min={50000} max={400000} step={5000} unit="원" leverRank={rank(leverMap,"crm","repurchaseAOV")}        hasTopLevers={topLeversExist} />
       </Section>
 
       {/* 운영 / 혼잡도 */}
@@ -129,10 +168,11 @@ export default function ControlPanel({ state, update, toggleClosedDow, resetDoma
         label="운영 / 혼잡도"
         modified={isDomainModified("operations", O)}
         onReset={() => resetDomain("operations")}
+        groupScore={groupScore(leverMap, "operations")}
       >
-        <Slider domain="operations" field="staffCount"    label="직원 수"            value={O.staffCount}    defaultValue={io.staffCount}    onChange={update} min={1}  max={10} unit="명" />
-        <Slider domain="operations" field="staffCapacity" label="직원 1인당 동시 응대" value={O.staffCapacity} defaultValue={io.staffCapacity} onChange={update} min={1}  max={10} unit="명" />
-        <Slider domain="operations" field="operatingDays" label="월 영업일 (상한)"   value={O.operatingDays} defaultValue={io.operatingDays} onChange={update} min={20} max={31} unit="일" />
+        <Slider domain="operations" field="staffCount"    label="직원 수"            value={O.staffCount}    defaultValue={io.staffCount}    onChange={update} min={1}  max={10} unit="명" leverRank={rank(leverMap,"operations","staffCount")}    hasTopLevers={topLeversExist} />
+        <Slider domain="operations" field="staffCapacity" label="직원 1인당 동시 응대" value={O.staffCapacity} defaultValue={io.staffCapacity} onChange={update} min={1}  max={10} unit="명" leverRank={rank(leverMap,"operations","staffCapacity")} hasTopLevers={topLeversExist} />
+        <Slider domain="operations" field="operatingDays" label="월 영업일 (상한)"   value={O.operatingDays} defaultValue={io.operatingDays} onChange={update} min={20} max={31} unit="일" leverRank={rank(leverMap,"operations","operatingDays")} hasTopLevers={topLeversExist} />
 
         <div style={{ marginTop: 10 }}>
           <div style={{ marginBottom: 6 }}><CodeLabel>정기 휴무 요일</CodeLabel></div>
