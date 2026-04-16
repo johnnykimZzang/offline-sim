@@ -1,4 +1,5 @@
 import { memo, useState } from "react";
+import { createPortal } from "react-dom";
 import { T } from "../../design/tokens";
 import { fmt } from "../../lib/format";
 
@@ -86,11 +87,11 @@ function Slider({
                 flexShrink: 0,
                 userSelect: "none",
               }}>!</span>
-              {tipPos && (
+              {tipPos && createPortal(
                 <div style={{
                   position: "fixed",
                   top: tipPos.y - 8,
-                  left: Math.min(tipPos.x, window.innerWidth - 250),
+                  left: Math.max(125, Math.min(tipPos.x, window.innerWidth - 125)),
                   transform: "translate(-50%, -100%)",
                   background: T.bgSurface2,
                   border: `1px solid ${T.borderStrong}`,
@@ -102,9 +103,10 @@ function Slider({
                   lineHeight: 1.55,
                   width: 230,
                   whiteSpace: "normal",
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.6)",
-                  zIndex: 9999,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.9)",
+                  zIndex: 99999,
                   pointerEvents: "none",
+                  opacity: 1,
                 }}>
                   {tip}
                   <div style={{
@@ -117,7 +119,8 @@ function Slider({
                     borderRight: "5px solid transparent",
                     borderTop: `5px solid ${T.borderStrong}`,
                   }} />
-                </div>
+                </div>,
+                document.body
               )}
             </span>
           )}

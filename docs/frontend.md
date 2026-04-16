@@ -1,6 +1,6 @@
 # Frontend 문서
 
-> 최종 업데이트: 2026-04-09
+> 최종 업데이트: 2026-04-16
 
 ---
 
@@ -37,6 +37,7 @@ App (height: 100vh, flex column)
     │   └── ControlPanel (scrollable)
     └── .sim-main (flex: 1, overflow-y: auto)
         ├── KpiGrid
+        ├── OpsStrip          ← 2026-04-16 추가
         ├── DiffSummary
         ├── Tab bar
         └── View (calendar / weekly / funnel / crm / goal / compare / sensitivity)
@@ -70,6 +71,29 @@ CSS 클래스 기반 (`src/index.css`):
 - `.sim-main` — 모바일에서 full-width + gutter padding
 
 body scroll lock: App.jsx의 `useEffect`에서 `sidebarOpen` 상태에 따라 `document.body.style.overflow` 제어.
+
+---
+
+## 컴포넌트 목록 (주요)
+
+| 컴포넌트 | 경로 | 역할 |
+|---------|------|------|
+| `KpiGrid` | `components/KpiGrid.jsx` | 8개 KPI 카드 (hero + primary + secondary) |
+| `OpsStrip` | `components/OpsStrip.jsx` | 운영 현황 지표 스트립 (일 유입·체류·재방문·가동일) |
+| `DiffSummary` | `components/DiffSummary.jsx` | baseline 대비 변화 요약 |
+| `ControlPanel` | `components/ControlPanel.jsx` | 7개 카테고리 슬라이더 패널 |
+| `TopLeversCard` | `components/TopLeversCard.jsx` | 민감도 Top 3 레버 카드 |
+| `Slider` | `components/primitives/Slider.jsx` | 도메인-aware 슬라이더 (툴팁 portal 렌더링) |
+
+---
+
+## 툴팁 구현 방식
+
+`primitives/Slider.jsx`의 툴팁은 `createPortal(…, document.body)`로 렌더링한다.
+
+- **이유**: 좌측 슬라이더 패널에 `overflow-y: auto`가 걸려 있어 인라인 렌더링 시 잘림 발생.
+- **위치 계산**: `getBoundingClientRect()`로 `!` 아이콘 위치 획득 → `fixed` + 양쪽 경계 클램프 (`Math.max(125, Math.min(x, width-125))`).
+- `opacity: 1` 명시, `zIndex: 99999`.
 
 ---
 

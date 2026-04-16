@@ -49,20 +49,21 @@ export function computeDecisionMakers(conversion, visitors) {
 
 // ── 4. 혼잡도 보정 ──────────────────────────────────────────────────────────
 export function computeStaffing(operations, fitting, visitors) {
+  const opMinutes  = (operations.operatingHours ?? 8) * 60;
   const capacity   = Math.max(1, operations.staffCount * operations.staffCapacity);
-  const concurrent = visitors * (fitting.avgStayMinutes / OP_MINUTES) * PEAK_FACTOR;
+  const concurrent = visitors * (fitting.avgStayMinutes / opMinutes) * PEAK_FACTOR;
   const overflow   = (concurrent - capacity) / capacity;
   let convMult = 1.0;
   if      (overflow > 1.0) convMult = 0.65;
   else if (overflow > 0.5) convMult = 0.80;
   else if (overflow > 0.2) convMult = 0.90;
-  return { capacity, concurrent, overflow, convMult };
+  return { capacity, concurrent, overflow, convMult, opMinutes };
 }
 
 // ── 5. 피팅 경로 ────────────────────────────────────────────────────────────
-export function computeFittingPath(fitting, decisionMakers, convMult) {
+export function computeFittingPath(fitting, decisionMakers, convMult, opMinutes = OP_MINUTES) {
   let fittingVisitors = decisionMakers * (fitting.useRate / 100);
-  const turnsPerDay   = fitting.roomCount * (OP_MINUTES / Math.max(15, fitting.avgStayMinutes));
+  const turnsPerDay   = fitting.roomCount * (opMinutes / Math.max(15, fitting.avgStayMinutes));
   let fittingDropped = 0;
   if (fittingVisitors > turnsPerDay) {
     const overflowFit = fittingVisitors - turnsPerDay;
@@ -133,7 +134,7 @@ export function simulateDay(state, dayNum, dow, isOpen, isWeekend, effectiveAOV)
   const { dailyFoot, visitors }      = computeTraffic(state.demand, dow, isWeekend);
   const { decisionMakers }           = computeDecisionMakers(state.conversion, visitors);
   const staffing                     = computeStaffing(state.operations, state.fitting, visitors);
-  const fittingPath                  = computeFittingPath(state.fitting, decisionMakers, staffing.convMult);
+  const fittingPath                  = computeFittingPath(state.fitting, decisionMakers, staffing.convMult, staffing.opMinutes);
   const segments                     = computeSegmentConversion(
     state.conversion,
     state.demand,
@@ -187,7 +188,13 @@ export function simulateMonth(state, year, month) {
     days.push(simulateDay(state, d, dow, isOpen, isWeekend, effectiveAOV));
   }
 
-  return { days, firstDow, daysInMonth, effectiveAOV };
+  return {
+    days, firstDow, daysInMonth, effectiveAOV,
+    avgStayMinutes: state.fitting.avgStayMinutes,
+    peakTimeShare:  state.fitting.peakTimeShare ?? 30,
+    operatingHours: state.operations.operatingHours ?? 8,
+    returnVisitRate: state.crm.returnVisitRate ?? 10,
+  };
 }
 
 // ── 11. 집계 ────────────────────────────────────────────────────────────────
@@ -237,6 +244,21 @@ export function computeSummary(monthData) {
   // Congestion days
   const congestionDays = open.filter(d => d.congestionOverflow > 0.2).length;
 
+  // ── 운영 현황 파생 지표 ──────────────────────────────────────────────────
+  const avgStayMinutes  = monthData.avgStayMinutes ?? 20;
+  const operatingHours  = monthData.operatingHours ?? 8;
+  const peakTimeShare   = monthData.peakTimeShare  ?? 30;
+  const returnVisitRate = monthData.returnVisitRate ?? 10;
+
+  // 일 평균 유입
+  const avgDailyVisitors = openCount ? totalVisitors / openCount : 0;
+  // 시간당 평균 체류 고객 (리틀의 법칙: L = λ × W)
+  const avgConcurrentPerHour = avgDailyVisitors * (avgStayMinutes / 60) / operatingHours;
+  // 피크 2시간 기준 체류 고객
+  const peakConcurrentPerHour = (avgDailyVisitors * (peakTimeShare / 100) / 2) * (avgStayMinutes / 60);
+  // 일 평균 재방문 고객
+  const avgDailyReturnVisitors = avgDailyVisitors * (returnVisitRate / 100);
+
   return {
     totalRevenue, totalVisitors, totalPurchasers, totalFoot, totalDecisionMakers,
     totalSignups, totalOptIns, totalStories, totalOnlineRepurch, totalCrmRevenue,
@@ -245,6 +267,9 @@ export function computeSummary(monthData) {
     weeks, wkndStats, wkdyStats,
     congestionDays,
     effectiveAOV: monthData.effectiveAOV,
+    // 운영 현황 지표
+    avgDailyVisitors, avgConcurrentPerHour, peakConcurrentPerHour,
+    avgDailyReturnVisitors, returnVisitRate,
   };
 }
 

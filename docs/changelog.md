@@ -2,6 +2,28 @@
 
 > 사용자/운영 관점 변경 요약. 최신이 위.
 
+## 2026-04-16 — 고객 수 지표 추가 + 운영 현황 스트립 + 툴팁 수정
+
+### 새 지표 3종 (슬라이더 추가)
+- **일 영업시간** (`operations.operatingHours`, 기본 8시간) — 시간당 체류 고객·피팅룸 회전율 계산 기준. 기존 하드코딩(480분)을 슬라이더로 노출.
+- **피크 유입 집중도** (`fitting.peakTimeShare`, 기본 30%) — 일 유입 중 피크 2시간에 집중되는 비율. OpsStrip의 피크 시간당 체류 고객 계산에 사용.
+- **오프라인 재방문율** (`crm.returnVisitRate`, 기본 10%) — 방문 고객 중 구매 이력 있는 재방문 비율.
+
+### 운영 현황 스트립 (OpsStrip)
+KpiGrid와 DiffSummary 사이에 신규 삽입. 표시 지표:
+- **일 평균 유입** — `totalVisitors / openDays`
+- **시간당 체류 (평균)** — 리틀의 법칙: `avgVisitors × avgStayMin / 60 / operatingHours`
+- **시간당 체류 (피크 2시간)** — `(avgVisitors × peakShare% / 2) × avgStayMin / 60`
+- **일 재방문 고객** — `avgVisitors × returnVisitRate%`
+- **영업 가동일** — 실제 영업 일수
+
+### 툴팁 수정
+- `createPortal(…, document.body)` 적용 → 사이드바 `overflow: auto` 부모에 잘리지 않음.
+- `opacity: 1` 명시, `boxShadow` 강화 → 불투명하게 표시.
+- 좌·우 경계 모두 클램프 → 화면 끝에서 잘리지 않음.
+
+---
+
 ## 2026-04-09 — SaaS Full-Width 레이아웃 전환 + 반응형
 
 ### 레이아웃

@@ -20,6 +20,7 @@ import GoalView      from "./components/views/GoalView";
 import CompareView   from "./components/views/CompareView";
 import SensitivityView from "./components/views/SensitivityView";
 import DiffSummary from "./components/DiffSummary";
+import OpsStrip   from "./components/OpsStrip";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — 조립 + 레이아웃만. 모든 비즈니스 로직은 lib/simulator + insights에.
@@ -207,6 +208,9 @@ export default function App() {
         >
 
           <KpiGrid summary={summary} targetRevenue={state.goal.targetRevenue} />
+
+          {/* OpsStrip — 운영 현황 지표 스트립 */}
+          <OpsStrip summary={summary} />
 
           {/* DiffSummary — 변경 컨텍스트 스트립 (탭 위) */}
           <DiffSummary

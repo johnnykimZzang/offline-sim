@@ -41,6 +41,7 @@ export const initialState = {
     useRate: 20,              // 피팅룸 이용률 (%)
     purchaseRate: 50,         // 피팅 후 구매율 (%)
     waitDropRate: 10,         // 대기 이탈률 (%)
+    peakTimeShare: 30,        // 피크 2시간 유입 집중도 (%) — 일 유입 중 피크 2시간에 집중되는 비율
   },
 
   // CRM
@@ -51,6 +52,7 @@ export const initialState = {
     qrScanRate: 50,           // QR 스캔률 (%)
     onlineRepurchaseRate: 18, // 온라인 재구매율 (%)
     repurchaseAOV: 180000,    // 재구매 객단가
+    returnVisitRate: 10,      // 오프라인 재방문율 (%) — 방문 고객 중 이미 구매 이력 있는 재방문 비율
   },
 
   // 운영 / 혼잡도
@@ -59,6 +61,7 @@ export const initialState = {
     staffCapacity: 5,         // 직원 1인당 동시 응대 가능 인원
     operatingDays: 28,        // 월 영업일 상한
     closedDows: [],           // 정기 휴무 요일 [0=일, 1=월, …]
+    operatingHours: 8,        // 일 영업시간 (시간) — 혼잡도·체류 계산 기준
   },
 
   // 목표

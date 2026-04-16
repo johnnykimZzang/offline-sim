@@ -1,8 +1,29 @@
 # Design Decisions
 
-> 최종 갱신: 2026-04-09
+> 최종 갱신: 2026-04-16
 
 중요한 설계 판단과 그 이유. 새로운 결정은 위에 추가 (역시간순).
+
+---
+
+## 2026-04-16 — 운영 지표 설계: 파생 지표 vs 별도 입력
+
+**결정:** 일 유입·시간당 체류 고객 수는 기존 파라미터에서 파생 계산하되, 세 개의 보완 파라미터(`operatingHours`, `peakTimeShare`, `returnVisitRate`)를 슬라이더로 추가한다.
+
+**이유:**
+- 일 유입 = `totalVisitors / openDays` — 이미 계산 가능. 별도 입력 불필요.
+- 시간당 체류 = 리틀의 법칙. `avgStayMinutes`는 기존 파라미터이나, 분모인 영업시간이 하드코딩(480분)이어서 노출 필요.
+- 피크 집중도(`peakTimeShare`)가 없으면 "피크 시간당 몇 명?"에 답할 수 없음. PEAK_FACTOR(1.8)는 혼잡도 감쇄용이라 별개.
+- 재방문율은 CRM 이해를 위해 필요하나 매출 계산 흐름에는 미반영(표시 전용). 추후 재방문 전환율 별도 적용 가능.
+
+**`computeSummary` 확장 방식:**
+- `simulateMonth()` 반환값에 `avgStayMinutes`, `peakTimeShare`, `operatingHours`, `returnVisitRate` 포함.
+- `computeSummary()`가 이를 받아 파생 지표 4개 산출. 순수 함수 원칙 유지 (state 직접 참조 X).
+
+**툴팁 portal 결정:**
+- 기존 인라인 렌더링 방식은 `overflow: auto` 부모 컨테이너에 클리핑됨.
+- `createPortal(…, document.body)`로 DOM 루트에 마운트. React 공식 패턴.
+- `position: fixed` + `getBoundingClientRect()` 조합으로 위치 정확도 유지.
 
 ---
 
